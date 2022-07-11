@@ -4,6 +4,10 @@ from PIL import Image, ImageTk
 ROOT_WIDTH = 800
 ROOT_HEIGHT = 800
 
+WARNING_WIN_HEIGHT = 200
+WARNING_WIN_WIDTH = WARNING_WIN_HEIGHT * 2
+
+
 FONT = "Arial"
 TEXT_SIZE = 20
 BUTTON_TEXT_SIZE = 15
@@ -38,9 +42,55 @@ def clear(event):
     entry.unbind("<Button-1>", clicked)
     add_button.config(state="normal")
 
+
+def save_list():
+    pass
+
+
+def open_list():
+    pass
+
+
+def warning_window():
+    global warning_win
+    warning_win = Toplevel(root)
+    warning_win.title("Clear To Do List")
+    warning_win.iconbitmap("exclamation_mark.ico")
+    warning_win.resizable(False, False)
+    warning_win.attributes("-topmost", "true")
+    warning_win.geometry(f"{WARNING_WIN_WIDTH}x{WARNING_WIN_HEIGHT}+{int(500 + ROOT_WIDTH / 2 - WARNING_WIN_WIDTH / 2)}+{int(50 + ROOT_HEIGHT / 2 - WARNING_WIN_HEIGHT / 2)}")
+    
+    root.attributes("-disabled", "true")
+
+    canvas = Canvas(warning_win, width=WARNING_WIN_WIDTH, height=WARNING_WIN_HEIGHT, bg="red")
+    canvas.grid(columnspan=2, rowspan=2)
+    message = Label(warning_win, text="Are you sure you want to clear your To Do List?")
+    message.grid(columnspan=2, column=0, row=0)
+    confirm_button = Button(warning_win, text="Confirm", command=confirm_clear)
+    confirm_button.grid(column=0, row=1)
+    cancel_button = Button(warning_win, text="Storno", command=storno_clear)
+    cancel_button.grid(column=1, row=1)
+
+
+def confirm_clear():
+    to_do_list.delete(0, "end")
+    warning_win.destroy()
+    root.attributes("-disabled", "false")
+    task_num = Label(root, text=to_do_list.size(), font=(FONT, TEXT_SIZE))
+    task_num.grid(column=0, row=2)
+
+
+def storno_clear():
+    warning_win.destroy()
+    root.attributes("-disabled", "false")
+    task_num = Label(root, text=to_do_list.size(), font=(FONT, TEXT_SIZE))
+    task_num.grid(column=0, row=2)
+
+
 # Root
 root = Tk()
 root.title("To Do List")
+root.iconbitmap("to_do.ico")
 root.geometry(f"{ROOT_WIDTH}x{ROOT_HEIGHT}+500+50")
 root.resizable(False, False)
 
@@ -85,5 +135,17 @@ task_num.grid(column=0, row=2)
 done_list = Listbox(root, width=DONE_WIDTH, height=DONE_HEIGHT, font=(FONT, TEXT_SIZE))
 done_list.grid(column=1, row=3)
 
+
+# Menu
+my_menu = Menu(root)
+file = Menu(my_menu, tearoff=0)
+
+file.add_command(label="Save", command=save_list)
+file.add_command(label="Open", command=open_list)
+file.add_separator()
+file.add_command(label="Clear", command=warning_window)
+
+my_menu.add_cascade(label="File", menu=file)
+root.config(menu=my_menu)
 
 root.mainloop()
