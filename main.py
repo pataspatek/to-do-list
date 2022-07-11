@@ -1,56 +1,107 @@
 from tkinter import *
 from PIL import Image, ImageTk
+from tkinter import filedialog
+import pickle
 
+# Proportions of the window
 ROOT_WIDTH = 800
 ROOT_HEIGHT = 800
 
+# Proportions of the confirming window that pops out when clearing whole list
 WARNING_WIN_HEIGHT = 200
 WARNING_WIN_WIDTH = WARNING_WIN_HEIGHT * 2
 
-
+# Font and text size
 FONT = "Arial"
 TEXT_SIZE = 20
 BUTTON_TEXT_SIZE = 15
 
+# Height and width of the main To-Do List
 TO_DO_HEIGHT = 10
-DONE_HEIGHT = int(TO_DO_HEIGHT / 2)
+DONE_HEIGHT = int(TO_DO_HEIGHT / 3)
 
+# Height and width of the Done List
 TO_DO_WIDTH = 30
-DONE_WIDTH = int(TO_DO_WIDTH / 2)
+DONE_WIDTH = int(TO_DO_WIDTH)
 
 
+# Add the task to the To-Do List 
 def confirm_task():
     task = entry.get()
     if task != "":
-        to_do_list.insert(0, task.capitalize())
+        to_do_list.insert(0, task)
         entry.delete(0, END)
     task_num = Label(root, text=to_do_list.size(), font=(FONT, TEXT_SIZE))
     task_num.grid(column=0, row=2)
-    
 
+
+# Move the done task from the To-Do List to the Done List
 def delete_task():
     task = to_do_list.get("anchor")
     to_do_list.delete("anchor")
     if task != "":
-        done_list.insert(0, task)
+        done_list.insert(0, f"{task}" + "✓")
     task_num = Label(root, text=to_do_list.size(), font=(FONT, TEXT_SIZE))
     task_num.grid(column=0, row=2)
     
 
+# Clear on click of the default message in the Entry
 def clear(event):
     entry.delete(0, END)
     entry.unbind("<Button-1>", clicked)
     add_button.config(state="normal")
 
 
+# Save list 
 def save_list():
-    pass
+    file_name = filedialog.asksaveasfilename(initialdir="C:/Users/uzivatel/Dev/Projects/Others/Todo/data", 
+    title="Save File", 
+    filetypes=(("Dat Files", "*.dat"), ("All Files", "*.*"))
+    )
 
+    # Converting the file into the .dat format
+    if file_name:
+        if file_name.endswith(".dat"):
+            pass
+        else:
+            file_name = f"{file_name}.dat"
 
+    stuff = to_do_list.get(0, END)
+    done = done_list.get(0, END)
+    output_file = open(file_name, "wb")
+    pickle.dump(stuff + done, output_file)
+    
+
+# Open saved list
 def open_list():
-    pass
+    file_name = filedialog.askopenfilename(initialdir="C:/Users/uzivatel/Dev/Projects/Others/Todo/data", 
+    title="Open File", 
+    filetypes=(("Dat Files", "*.dat"), ("All Files", "*.*"))
+    )
+
+    if file_name:
+        # Delete current list
+        to_do_list.delete(0, END)
+        done_list.delete(0, END)
+
+        # Open the file
+        input_file = open(file_name, "rb")
+
+        # Load the data from the file
+        stuff = pickle.load(input_file)
+
+        # Output stuff to the screen
+        for task in stuff:
+            if "✓" in task:
+                done_list.insert(END, task)
+            else:
+                to_do_list.insert(END, task)
+                
+    task_num = Label(root, text=to_do_list.size(), font=(FONT, TEXT_SIZE))
+    task_num.grid(column=0, row=2)
 
 
+# Window with warning when clearing the whole list
 def warning_window():
     global warning_win
     warning_win = Toplevel(root)
@@ -61,6 +112,7 @@ def warning_window():
     warning_win.geometry(f"{WARNING_WIN_WIDTH}x{WARNING_WIN_HEIGHT}+{int(500 + ROOT_WIDTH / 2 - WARNING_WIN_WIDTH / 2)}+{int(50 + ROOT_HEIGHT / 2 - WARNING_WIN_HEIGHT / 2)}")
     
     root.attributes("-disabled", "true")
+    warning_win.protocol("WM_DELETE_WINDOW", disable_event)
 
     canvas = Canvas(warning_win, width=WARNING_WIN_WIDTH, height=WARNING_WIN_HEIGHT, bg="red")
     canvas.grid(columnspan=2, rowspan=2)
@@ -72,19 +124,26 @@ def warning_window():
     cancel_button.grid(column=1, row=1)
 
 
+# Confirm clear list
 def confirm_clear():
-    to_do_list.delete(0, "end")
+    to_do_list.delete(0, END)
+    done_list.delete(0, END)
     warning_win.destroy()
     root.attributes("-disabled", "false")
     task_num = Label(root, text=to_do_list.size(), font=(FONT, TEXT_SIZE))
     task_num.grid(column=0, row=2)
 
 
+# Storno clear
 def storno_clear():
     warning_win.destroy()
     root.attributes("-disabled", "false")
     task_num = Label(root, text=to_do_list.size(), font=(FONT, TEXT_SIZE))
     task_num.grid(column=0, row=2)
+
+
+def disable_event():
+    pass
 
 
 # Root
@@ -132,8 +191,8 @@ task_num.grid(column=0, row=2)
 
 
 # Done tasks - inside are stacked completed tasks
-done_list = Listbox(root, width=DONE_WIDTH, height=DONE_HEIGHT, font=(FONT, TEXT_SIZE))
-done_list.grid(column=1, row=3)
+done_list = Listbox(root, width=DONE_WIDTH, height=DONE_HEIGHT, font=(FONT, int(TEXT_SIZE / 2)), fg="gray")
+done_list.grid(column=1, row=3, pady=(0, 50))
 
 
 # Menu
@@ -147,5 +206,6 @@ file.add_command(label="Clear", command=warning_window)
 
 my_menu.add_cascade(label="File", menu=file)
 root.config(menu=my_menu)
+
 
 root.mainloop()
