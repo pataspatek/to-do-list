@@ -1,4 +1,5 @@
 from tkinter import *
+from tkinter import messagebox
 from PIL import Image, ImageTk
 from tkinter import filedialog
 import pickle
@@ -12,13 +13,13 @@ WARNING_WIN_HEIGHT = 200
 WARNING_WIN_WIDTH = WARNING_WIN_HEIGHT * 2
 
 # Font and text size
-FONT = "Arial"
+FONT = "Tahoma"
 TEXT_SIZE = 20
 BUTTON_TEXT_SIZE = 15
 
 # Height and width of the main To-Do List
 TO_DO_HEIGHT = 10
-DONE_HEIGHT = int(TO_DO_HEIGHT / 3)
+DONE_HEIGHT = int(TO_DO_HEIGHT / 2)
 
 # Height and width of the Done List
 TO_DO_WIDTH = 30
@@ -29,7 +30,7 @@ DONE_WIDTH = int(TO_DO_WIDTH)
 def confirm_task():
     task = entry.get()
     if task != "":
-        to_do_list.insert(0, task)
+        to_do_list.insert(0, task.capitalize())
         entry.delete(0, END)
     task_num = Label(root, text=to_do_list.size(), font=(FONT, TEXT_SIZE))
     task_num.grid(column=0, row=2)
@@ -116,11 +117,11 @@ def warning_window():
 
     canvas = Canvas(warning_win, width=WARNING_WIN_WIDTH, height=WARNING_WIN_HEIGHT, bg="red")
     canvas.grid(columnspan=2, rowspan=2)
-    message = Label(warning_win, text="Are you sure you want to clear your To Do List?")
+    message = Label(warning_win, text="Are you sure you want to clear your To Do List?", font=(FONT))
     message.grid(columnspan=2, column=0, row=0)
-    confirm_button = Button(warning_win, text="Confirm", command=confirm_clear)
+    confirm_button = Button(warning_win, text="Confirm", command=confirm_clear, font=(FONT))
     confirm_button.grid(column=0, row=1)
-    cancel_button = Button(warning_win, text="Storno", command=storno_clear)
+    cancel_button = Button(warning_win, text="Storno", command=storno_clear, font=(FONT))
     cancel_button.grid(column=1, row=1)
 
 
@@ -132,6 +133,7 @@ def confirm_clear():
     root.attributes("-disabled", "false")
     task_num = Label(root, text=to_do_list.size(), font=(FONT, TEXT_SIZE))
     task_num.grid(column=0, row=2)
+    root.attributes("-topmost", "true")
 
 
 # Storno clear
@@ -140,6 +142,12 @@ def storno_clear():
     root.attributes("-disabled", "false")
     task_num = Label(root, text=to_do_list.size(), font=(FONT, TEXT_SIZE))
     task_num.grid(column=0, row=2)
+    root.attributes("-topmost", "true")
+
+
+def on_closing():
+    if messagebox.askokcancel(title="Quit", message="Are you sure you want to quit?\nUnsaved work will be lost."):
+        root.destroy()
 
 
 def disable_event():
@@ -156,12 +164,10 @@ root.resizable(False, False)
 canvas = Canvas(root, width=ROOT_WIDTH, height=ROOT_HEIGHT, bg="gray")
 canvas.grid(columnspan=3, rowspan=4)
 
-
 # Logo
 logo = ImageTk.PhotoImage(Image.open("logo.jpg"))
 logo_label = Label(image=logo)
 logo_label.grid(column=1, row=0)
-
 
 # Text field - write a name of the task
 default_text = StringVar()
@@ -171,29 +177,39 @@ entry.grid(column=1, row=1)
 
 clicked = entry.bind("<Button-1>", clear)
 
-
 # Button to add - confirms the task and adds it into the to do list
 add_button = Button(root, text="Add", command=confirm_task, font=(FONT, BUTTON_TEXT_SIZE), state="disabled")
 add_button.grid(column=2, row=1)
-
 
 # Button to delete - deletes the task from a list
 delete_button = Button(root, text="Done", command=delete_task, font=(FONT, BUTTON_TEXT_SIZE))
 delete_button.grid(column=2, row=2)
 
-
 # To do list - inside will be stacked all the tasks
-to_do_list = Listbox(root, width=TO_DO_WIDTH, height=TO_DO_HEIGHT, font=(FONT, TEXT_SIZE))
-to_do_list.grid(column=1, row=2)
+to_do_frame = Frame(root)
+to_do_scrollbar = Scrollbar(to_do_frame, orient=VERTICAL)
+to_do_list = Listbox(to_do_frame, width=TO_DO_WIDTH, height=TO_DO_HEIGHT, font=(FONT, TEXT_SIZE), yscrollcommand=to_do_scrollbar.set)
 
+to_do_scrollbar.config(command=to_do_list.yview)
+
+to_do_scrollbar.pack(side=RIGHT, fill=Y)
+to_do_list.pack()
+to_do_frame.grid(column=1, row=2)
+
+# Task counter
 task_num = Label(root, text=0, font=(FONT, TEXT_SIZE))
 task_num.grid(column=0, row=2)
 
-
 # Done tasks - inside are stacked completed tasks
-done_list = Listbox(root, width=DONE_WIDTH, height=DONE_HEIGHT, font=(FONT, int(TEXT_SIZE / 2)), fg="gray")
-done_list.grid(column=1, row=3, pady=(0, 50))
+done_frame = Frame(root)
+done_scrollbar = Scrollbar(done_frame, orient=VERTICAL)
+done_list = Listbox(done_frame, width=DONE_WIDTH, height=DONE_HEIGHT, font=(FONT, int(TEXT_SIZE / 2)), fg="gray", yscrollcommand=done_scrollbar.set)
 
+done_scrollbar.config(command=done_list.yview)
+
+done_scrollbar.pack(side=RIGHT, fill=Y)
+done_list.pack()
+done_frame.grid(column=1, row=3, pady=(0, 50))
 
 # Menu
 my_menu = Menu(root)
@@ -207,5 +223,6 @@ file.add_command(label="Clear", command=warning_window)
 my_menu.add_cascade(label="File", menu=file)
 root.config(menu=my_menu)
 
-
+# Mainloop
+root.protocol("WM_DELETE_WINDOW", on_closing)
 root.mainloop()
